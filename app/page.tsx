@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import ShakyTriangle from './components/ShakyTriangle';
-import DragDrop from './components/DragDrop';
+import ShakyTriangle from '../components/ShakyTriangle';
+import DragDrop from '../components/DragDrop';
 
 interface Position {
   x: number | null,
