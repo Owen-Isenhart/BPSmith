@@ -93,6 +93,30 @@ export default function HomePage() {
     setPatchedRomFile(file ? file : null);
   }, []);
 
+  const makeFile = async () => {
+    if (selectedButton === "apply"){
+      const res = await fetch('/api/apply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ROM: romFile, Patch: patchFile })
+      });
+      const data = await res.json();
+      console.log(data)
+    }
+    else{
+      const res = await fetch('/api/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ROM: romFile, modifiedROM: patchedRomFile })
+      });
+      const data = await res.json();
+      console.log(data)
+    } 
+  }
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen bg-gray-50 text-teal-700 overflow-hidden pt-20">
@@ -171,7 +195,7 @@ export default function HomePage() {
         className={`flex justify-center items-center transition-opacity duration-500 ease mt-1 ${showFinalButton ? 'opacity-100' : 'opacity-0'}`}
         style={{ transform: 'translateY(-24vh)' }}
       >
-        <button className="font-ubuntu px-6 py-3 bg-gray-50 btn-hover-shadow border border-teal-700 rounded-sm hover:text-gray-50 hover:cursor-pointer hover:font-bold hover:rounded-xl transition-all duration-500 ease-in-out">
+        <button onClick={makeFile} className="font-ubuntu px-6 py-3 bg-gray-50 btn-hover-shadow border border-teal-700 rounded-sm hover:text-gray-50 hover:cursor-pointer hover:font-bold hover:rounded-xl transition-all duration-500 ease-in-out">
           {selectedButton === "apply" ? <p>Apply</p> : <p>Create</p>}
         </button>
       </div>

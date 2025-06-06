@@ -2,12 +2,12 @@ import crc32 from 'crc/crc32';
 import fs from 'fs';
 import path from 'path';
 
-export class BinFile {
+export default class BinaryFile {
   littleEndian = false;
   offset = 0;
-  private _lastRead: any = null;
-  private _offsetsStack: number[] = [];
-  private _u8array!: Uint8Array;
+  _lastRead: any = null;
+  _offsetsStack: number[] = [];
+  _u8array!: Uint8Array;
   fileName!: string;
   fileType!: string;
   fileSize!: number;
@@ -22,10 +22,10 @@ export class BinFile {
   })();
 
   constructor(
-    source: string | number | BinFile | File | FileList | HTMLElement | ArrayBuffer | ArrayBufferView,
-    onLoad?: (file: BinFile) => void
+    source: string | number | BinaryFile | File | FileList | HTMLElement | ArrayBuffer | ArrayBufferView,
+    onLoad?: (file: BinaryFile) => void
   ) {
-    if (BinFile.RUNTIME_ENVIRONMENT === 'browser' && (source instanceof File || source instanceof FileList || (source instanceof HTMLElement && source.tagName === 'INPUT' && (source as HTMLInputElement).type === 'file'))) {
+    if (BinaryFile.RUNTIME_ENVIRONMENT === 'browser' && (source instanceof File || source instanceof FileList || (source instanceof HTMLElement && source.tagName === 'INPUT' && (source as HTMLInputElement).type === 'file'))) {
       if (source instanceof HTMLElement) source = (source as HTMLInputElement).files!;
       if (source instanceof FileList) source = source[0];
 
@@ -40,7 +40,7 @@ export class BinFile {
       };
       reader.readAsArrayBuffer(source);
     }
-    else if (BinFile.RUNTIME_ENVIRONMENT === 'node' && typeof source === 'string') {
+    else if (BinaryFile.RUNTIME_ENVIRONMENT === 'node' && typeof source === 'string') {
       if (!fs.existsSync(source)) throw new Error(`${source} does not exist`);
       const buffer = fs.readFileSync(source);
       this.fileName = path.basename(source);
@@ -49,7 +49,7 @@ export class BinFile {
       this._u8array = new Uint8Array(buffer);
       onLoad?.(this);
     }
-    else if (source instanceof BinFile) {
+    else if (source instanceof BinaryFile) {
       this.fileName = source.fileName;
       this.fileType = source.fileType;
       this.fileSize = source.fileSize;
@@ -78,7 +78,7 @@ export class BinFile {
       onLoad?.(this);
     }
     else {
-      throw new Error('Invalid BinFile source');
+      throw new Error('Invalid BinaryFile source');
     }
   }
 
@@ -178,25 +178,25 @@ export class BinFile {
     return crc32(Buffer.from(slice._u8array)).toString(16);
   }
 
-  slice(offset: number, len: number, doNotClone = false): BinFile {
+  slice(offset: number, len: number, doNotClone = false): BinaryFile {
     if (offset < 0) offset = 0;
     if ((offset + len) > this.fileSize) len = this.fileSize - offset;
     if (offset === 0 && len === this.fileSize && doNotClone) return this;
-    const newFile = new BinFile(this._u8array.buffer.slice(offset, offset + len) as ArrayBuffer);
+    const newFile = new BinaryFile(this._u8array.buffer.slice(offset, offset + len) as ArrayBuffer);
     newFile.fileName = this.fileName;
     newFile.fileType = this.fileType;
     newFile.littleEndian = this.littleEndian;
     return newFile;
   }
 
-  copyTo(target: BinFile, offsetSource: number, len: number, offsetTarget = offsetSource) {
+  copyTo(target: BinaryFile, offsetSource: number, len: number, offsetTarget = offsetSource) {
     for (let i = 0; i < len; i++) {
       target._u8array[offsetTarget + i] = this._u8array[offsetSource + i];
     }
   }
 
   save() {
-    if (BinFile.RUNTIME_ENVIRONMENT === 'browser') {
+    if (BinaryFile.RUNTIME_ENVIRONMENT === 'browser') {
       const blob = new Blob([this._u8array], { type: this.fileType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -206,7 +206,7 @@ export class BinFile {
       a.click();
       URL.revokeObjectURL(url);
       document.body.removeChild(a);
-    } else if (BinFile.RUNTIME_ENVIRONMENT === 'node') {
+    } else if (BinaryFile.RUNTIME_ENVIRONMENT === 'node') {
       fs.writeFileSync(this.fileName, Buffer.from(this._u8array));
     } else {
       throw new Error('Unsupported environment');
