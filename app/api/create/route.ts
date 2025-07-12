@@ -1,21 +1,38 @@
-// we don't need to check stuff here because that should be done in page.tsx before making request
-// actually maybe we should do the checks here
+import { NextResponse } from 'next/server';
+import RomPatcher from "../../../utils/RomPatcher";
+import BinFile from "../../../utils/BinFile";
 
-import type { NextApiRequest, NextApiResponse } from "next";
-import BinaryFile from "../../../lib/BinaryFile";
-import BPS from "../../../lib/formatBPS";
+export async function POST(request: Request) {
+    try {
+        const formData = await request.formData();
+        const originalFile = formData.get('original') as File;
+        const modifiedFile = formData.get('modified') as File;
 
-// send rom file as BinaryFile
-// send patch file as BinaryFile
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { ROM, modifiedROM } = req.body;
-  const romFile = new BinaryFile(ROM);
-  const modifiedROMFile = new BinaryFile(modifiedROM);
-  var patchFile: BPS;
-  try {
-    patchFile = BPS.create(romFile, modifiedROMFile);
-    res.status(200).json({ patchFile: patchFile });
-  } catch (error) {
-    res.status(400).json({ error: error });
-  }
+        if (!originalFile || !modifiedFile) {
+            return NextResponse.json({ error: 'Missing original or modified file' }, { status: 400 });
+        }
+
+        const originalBin = new BinFile(await originalFile.arrayBuffer());
+        const modifiedBin = new BinFile(await modifiedFile.arrayBuffer());
+
+        const patch = await RomPatcher.create(originalBin, modifiedBin);
+
+        const patchBinFile = patch.export('patch'); // The name here is used for the default filename
+
+        const patchBlob = patchBinFile.getBlob();
+
+
+        return new NextResponse(patchBlob, {
+            status: 200,
+            headers: {
+                'Content-Type': 'application/octet-stream',
+                'Content-Disposition': `attachment; filename="${patchBinFile.fileName}"`,
+            },
+        });
+
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'An unknown error occurred';
+        console.error('Error creating patch:', message);
+        return NextResponse.json({ error: message }, { status: 500 });
+    }
 }

@@ -22,6 +22,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "components/ShakyTriangle.jsx", "components/DragDrop.jsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "components/ShakyTriangle.jsx", "components/DragDrop.jsx", "app/api/BinFile.js", "app/api/bps.js"],
   "exclude": ["node_modules"]
 }

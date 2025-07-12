@@ -17,18 +17,17 @@ export default function HomePage() {
   const [showFileUpload, setShowFileUpload] = useState(false);
   const h1Ref = useRef<HTMLHeadingElement>(null);
   const h2Ref = useRef<HTMLHeadingElement>(null);
-  const [romFile, setRomFile] = useState<File | null>(null);
-  const [patchedRomFile, setPatchedRomFile] = useState<File | null>(null);
-  const [patchFile, setPatchFile] = useState<File | null>(null);
+  const [romFile, setRomFile] = useState<File[]>([]);
+  const [patchedRomFile, setPatchedRomFile] = useState<File[]>([]);
+  const [patchFile, setPatchFile] = useState<File[]>([]);
 
-  // stuff on mount
+
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
       setMousePosition({ x: event.clientX, y: event.clientY });
     };
     window.addEventListener('mousemove', handleMouseMove);
 
-    // idk why I didn't do this in tailwind but it's already done
     if (h1Ref.current && h2Ref.current) {
       const h1 = h1Ref.current;
       const h2 = h2Ref.current;
@@ -41,82 +40,101 @@ export default function HomePage() {
       }, 500);
     }
 
-    // timeout gives the buttons aura when they appear
     setTimeout(() => {
       setShowButtons(true);
     }, 750);
 
-    // cleanup
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
 
   useEffect(() => {
-    if (selectedButton) { // once they've selected a button, show the file upload
+    if (selectedButton) {
       setShowFileUpload(true);
     } else {
       setShowFileUpload(false);
-      setRomFile(null);
-      setPatchFile(null);
-      setPatchedRomFile(null);
+      setRomFile([]);
+      setPatchFile([]);
+      setPatchedRomFile([]);
     }
   }, [selectedButton]);
 
   useEffect(() => {
     let show = false;
-    if (selectedButton === 'apply') { // if they're applying a patch and have supplied a rom and patch, then show the apply button
-      if (romFile && patchFile) {
+    if (selectedButton === 'apply') {
+      if (romFile.length > 0 && patchFile.length > 0) {
         show = true;
       }
-    } else if (selectedButton === 'create') { // if they're creating a patch and have supplied two roms, then show the create button
-      if (romFile && patchedRomFile) {
+    } else if (selectedButton === 'create') {
+      if (romFile.length > 0 && patchedRomFile.length > 0) {
         show = true;
       }
     }
-    setTimeout(() => { // timeout gives this button some aura but not as much as the others
+    setTimeout(() => {
       setShowFinalButton(show);
     }, 150);
-    
+
   }, [romFile, patchFile, patchedRomFile, selectedButton]);
 
 
-  const handleRomSelected = useCallback((file: File) => {
-    setRomFile(file ? file : null);
+  const handleRomSelected = useCallback((files: File[]) => {
+    setRomFile(files);
   }, []);
 
-  const handlePatchSelected = useCallback((file: File) => {
-    setPatchFile(file ? file : null);
+  const handlePatchSelected = useCallback((files: File[]) => {
+    setPatchFile(files);
   }, []);
 
-  const handlePatchedRomSelected = useCallback((file: File) => {
-    setPatchedRomFile(file ? file : null);
+  const handlePatchedRomSelected = useCallback((files: File[]) => {
+    setPatchedRomFile(files);
   }, []);
 
   const makeFile = async () => {
-    if (selectedButton === "apply"){
-      const res = await fetch('/api/apply', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ROM: romFile, Patch: patchFile })
-      });
-      const data = await res.json();
-      console.log(data)
+    const formData = new FormData();
+    let url = '';
+    let fileName = 'download';
+
+    if (selectedButton === "apply" && romFile.length > 0 && patchFile.length > 0) {
+      formData.append('rom', romFile[0]);
+      formData.append('patch', patchFile[0]);
+      url = '/api/apply';
+      fileName = 'patched.z64';
+    } else if (selectedButton === "create" && romFile.length > 0 && patchedRomFile.length > 0) {
+      formData.append('original', romFile[0]); 
+      formData.append('modified', patchedRomFile[0]); 
+      url = '/api/create';
+      fileName = 'patch.bps';
+    } else {
+      return;
     }
-    else{
-      const res = await fetch('/api/create', {
+
+    try {
+      const res = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ROM: romFile, modifiedROM: patchedRomFile })
+        body: formData,
       });
-      const data = await res.json();
-      console.log(data)
-    } 
-  }
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Something went wrong');
+      }
+
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+
+    } catch (error) {
+      console.error('Error:', error);
+      alert(`An error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen bg-gray-50 text-teal-700 overflow-hidden pt-20">
