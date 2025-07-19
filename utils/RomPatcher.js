@@ -52,6 +52,11 @@ class RomPatcher {
 
         if (header === 'BPS1') {
             this._patch = bps.fromFile(this._patchFile);
+            if (this._patch.metaData === 'BPSmith') {
+                console.log('This patch was created with bpsmith.');
+            } else {
+                console.log('This patch was not created with bpsmith.');
+            }
         } else {
             throw new Error('Unsupported or unrecognized patch format.');
         }
@@ -73,7 +78,7 @@ class RomPatcher {
             throw new Error('Original and Modified files must be instances of BinFile');
         }
 
-        const patch = bps.buildFromRoms(originalFile, modifiedFile); 
+        const patch = bps.buildFromRoms(originalFile, modifiedFile);
 
         const patchedForVerification = patch.apply(originalFile);
         if (modifiedFile.hashCRC32() !== patchedForVerification.hashCRC32()) {

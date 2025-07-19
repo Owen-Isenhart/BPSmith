@@ -216,6 +216,7 @@ BPS.buildFromRoms = function (original, modified) {
 	var patch = new BPS();
 	patch.sourceSize = original.fileSize;
 	patch.targetSize = modified.fileSize;
+	patch.metaData = 'BPSmith'; // Add this line
 	patch.actions = createBPSFromFilesLinear(original, modified);
 	patch.sourceChecksum = original.hashCRC32();
 	patch.targetChecksum = modified.hashCRC32();
